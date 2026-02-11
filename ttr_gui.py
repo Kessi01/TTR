@@ -1234,14 +1234,14 @@ class NewTurnierDialog(QDialog):
             
             keyboard_layout.addLayout(row_layout)
         
-        # Letzte Zeile: ← Zurück, SPACE, OK (wie in Bild 1)
+        # Letzte Zeile: ← Zurück, SPACE (groß), OK (wie in Bild 1)
         last_row = QHBoxLayout()
         last_row.setSpacing(8)
         
-        # ZURÜCK-Button
+        # ZURÜCK-Button (breiter wie in Bild 1)
         btn_back = QPushButton("←")
         btn_back.setMinimumHeight(80)
-        btn_back.setMinimumWidth(160)
+        btn_back.setMinimumWidth(230)  # BREITER für bessere Aufteilung
         btn_back.setStyleSheet("""
             QPushButton {
                 background-color: #e94560;
@@ -1256,10 +1256,10 @@ class NewTurnierDialog(QDialog):
         btn_back.clicked.connect(self.reject)
         last_row.addWidget(btn_back)
         
-        # SPACE-TASTE (wie TouchKeyboard)
+        # SPACE-TASTE (wächst mit verfügbarem Platz wie in Bild 1)
         btn_space = QPushButton("SPACE")
         btn_space.setMinimumHeight(80)
-        btn_space.setMinimumWidth(450)  # GLEICH WIE TouchKeyboard
+        btn_space.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         btn_space.setStyleSheet("""
             QPushButton {
                 background-color: #3a3a4a;
@@ -1276,7 +1276,7 @@ class NewTurnierDialog(QDialog):
         # OK-BUTTON (groß, wie in Bild 1)
         btn_ok = QPushButton("OK")
         btn_ok.setMinimumHeight(80)
-        btn_ok.setMinimumWidth(200)
+        btn_ok.setMinimumWidth(230)  # GLEICHE BREITE WIE ZURÜCK
         btn_ok.setStyleSheet("""
             QPushButton {
                 background-color: #00d9ff;
