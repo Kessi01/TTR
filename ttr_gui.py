@@ -870,7 +870,7 @@ class TouchKeyboard(QWidget):
         
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(8)
+        layout.setSpacing(10)
         layout.setContentsMargins(0, 0, 0, 0)
         
         # Schweizer QWERTZ Layout
@@ -883,61 +883,61 @@ class TouchKeyboard(QWidget):
         
         for row in rows:
             row_layout = QHBoxLayout()
-            row_layout.setSpacing(6)
+            row_layout.setSpacing(8)
             
             for key in row:
                 if key == ' ': # Spacer
                     continue
                     
                 btn = QPushButton()
-                btn.setMinimumHeight(60)
+                btn.setMinimumHeight(80)  # Größer: von 60 auf 80
                 
                 actual_key = key
                 
                 if key == '___SPACE___':
                     btn.setText("SPACE")
-                    btn.setMinimumWidth(300)
+                    btn.setMinimumWidth(450)  # Größer: von 300 auf 450
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #3a3a4a;
                             color: white;
                             border: none;
                             border-radius: 8px;
-                            font-size: 18px;
+                            font-size: 24px;
                         }
                         QPushButton:pressed { background-color: #5a5a6a; }
                     """)
                     actual_key = ' '
                 elif key == '⌫':
                     btn.setText("⌫")
-                    btn.setMinimumWidth(60)
+                    btn.setMinimumWidth(90)  # Größer: von 60 auf 90
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #3a3a4a;
                             color: white;
                             border: none;
                             border-radius: 8px;
-                            font-size: 20px;
+                            font-size: 28px;
                         }
                         QPushButton:pressed { background-color: #5a5a6a; }
                     """)
                     actual_key = key
                 elif key == '⇧':
                     btn.setText("⇧")
-                    btn.setMinimumWidth(50)
+                    btn.setMinimumWidth(75)  # Größer: von 50 auf 75
                     self.shift_btn = btn
                     self.update_shift_button_style()
                     actual_key = key
                 else:
                     btn.setText(key.lower())
-                    btn.setMinimumWidth(45)
+                    btn.setMinimumWidth(65)  # Größer: von 45 auf 65
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #4a4a5a;
                             color: white;
                             border: none;
                             border-radius: 8px;
-                            font-size: 20px;
+                            font-size: 26px;
                             font-weight: bold;
                         }
                         QPushButton:pressed { background-color: #6a6a7a; }
@@ -959,7 +959,7 @@ class TouchKeyboard(QWidget):
                         color: #1a1a2e;
                         border: none;
                         border-radius: 8px;
-                        font-size: 20px;
+                        font-size: 28px;
                     }
                 """)
             else:
@@ -969,7 +969,7 @@ class TouchKeyboard(QWidget):
                         color: white;
                         border: none;
                         border-radius: 8px;
-                        font-size: 20px;
+                        font-size: 28px;
                     }
                     QPushButton:pressed { background-color: #5a5a6a; }
                 """)
