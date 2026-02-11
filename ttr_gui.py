@@ -1948,10 +1948,11 @@ class TurnierListPage(QWidget):
             self.main_window.show_start_menu()
     
     def on_new_turnier(self):
-        name, ok = QInputDialog.getText(self, "Neues Turnier", "Turniername:")
+        # Verwende den neuen Dialog mit Tastatur und Radio Buttons
+        name, sets, ok = NewTurnierDialog.get_turnier_info(self)
         if ok and name.strip():
             if self.main_window and self.main_window.db:
-                self.main_window.db.create_turnier(name.strip())
+                self.main_window.db.create_turnier(name.strip(), sets)
                 self.load_turniere()
     
     def on_turnier_selected(self, item):
