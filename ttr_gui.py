@@ -1153,10 +1153,10 @@ class NewTurnierDialog(QDialog):
             QLineEdit {
                 background-color: #16213e;
                 color: white;
-                border: 2px solid #0f3460;
-                border-radius: 10px;
-                padding: 10px;
-                font-size: 24px;
+                border: 3px solid #00d9ff;
+                border-radius: 15px;
+                padding: 15px;
+                font-size: 32px;
             }
         """)
         layout.addWidget(self.input_name)
@@ -1180,8 +1180,8 @@ class NewTurnierDialog(QDialog):
                 font-size: 20px;
             }
         """)
-        self.combo_sets.addItems(["Best of 3 (2 Gewinnsätze)", "Best of 5 (3 Gewinnsätze)", "Best of 7 (4 Gewinnsätze)"])
-        self.combo_sets.setCurrentIndex(1) # Default: Best of 5
+        self.combo_sets.addItems(["Best of 1 (1 Gewinnsatz)", "Best of 3 (2 Gewinnsätze)", "Best of 5 (3 Gewinnsätze)", "Best of 7 (4 Gewinnsätze)"])
+        self.combo_sets.setCurrentIndex(2) # Default: Best of 5
         layout.addWidget(self.combo_sets)
         
         # Buttons
@@ -1210,8 +1210,8 @@ class NewTurnierDialog(QDialog):
     def on_accept(self):
         self.result_name = self.input_name.text()
         idx = self.combo_sets.currentIndex()
-        # 0->2 sets, 1->3 sets, 2->4 sets
-        self.result_sets = idx + 2
+        # 0->1 set (BO1), 1->2 sets (BO3), 2->3 sets (BO5), 3->4 sets (BO7)
+        self.result_sets = idx + 1
         self.accept()
 
     @staticmethod
