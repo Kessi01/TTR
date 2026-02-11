@@ -1133,7 +1133,7 @@ class NewTurnierDialog(QDialog):
             }
             QLabel { color: white; font-size: 20px; }
         """)
-        self.setMinimumSize(800, 900)  # Größer für Tastatur + Dropdown
+        self.setMinimumSize(800, 900)  # Größer für Tastatur + Radio Buttons
         
         layout = QVBoxLayout(self)
         layout.setSpacing(20)
@@ -1146,7 +1146,7 @@ class NewTurnierDialog(QDialog):
         layout.addWidget(title)
         
         # Name Input
-        layout.addWidget(QLabel("Name:"))
+        layout.addWidget(QLabel("Turniername:"))
         self.input_name = QLineEdit()
         self.input_name.setMinimumHeight(60)
         self.input_name.setStyleSheet("""
@@ -1166,23 +1166,68 @@ class NewTurnierDialog(QDialog):
         self.keyboard.set_target(self.input_name)
         layout.addWidget(self.keyboard)
         
-        # Modus Auswahl
-        layout.addWidget(QLabel("Regeln:"))
-        self.combo_sets = QComboBox()
-        self.combo_sets.setMinimumHeight(60)
-        self.combo_sets.setStyleSheet("""
-            QComboBox {
-                background-color: #16213e;
-                color: white;
-                border: 2px solid #00d9ff;
-                border-radius: 10px;
+        # Spielmodus Auswahl (Radio Buttons)
+        mode_label = QLabel("Spielmodus:")
+        mode_label.setStyleSheet("font-size: 22px; color: #00d9ff; margin-top: 10px;")
+        layout.addWidget(mode_label)
+        
+        # Radio Button Container
+        radio_layout = QHBoxLayout()
+        radio_layout.setSpacing(15)
+        
+        # Button Group für exklusive Auswahl
+        self.mode_group = QButtonGroup(self)
+        
+        # Radio Button Style (identisch zu Match Setup)
+        radio_style = """
+            QRadioButton { 
+                font-size: 20px; 
+                color: #ffffff; 
+                spacing: 8px;
                 padding: 10px;
-                font-size: 20px;
+                border: 1px solid transparent;
+                border-radius: 5px;
             }
-        """)
-        self.combo_sets.addItems(["Best of 3 (2 Gewinnsätze)", "Best of 5 (3 Gewinnsätze)", "Best of 7 (4 Gewinnsätze)"])
-        self.combo_sets.setCurrentIndex(1)  # Default: Best of 5
-        layout.addWidget(self.combo_sets)
+            QRadioButton:hover {
+                background-color: #1a1a2e;
+                border: 1px solid #0f3460;
+            }
+            QRadioButton::indicator { 
+                width: 24px; 
+                height: 24px; 
+            }
+            QRadioButton::indicator:checked { 
+                background-color: #00d9ff; 
+                border: 2px solid #00d9ff; 
+                border-radius: 12px; 
+            }
+            QRadioButton::indicator:unchecked { 
+                background-color: #16213e; 
+                border: 2px solid #0f3460; 
+                border-radius: 12px; 
+            }
+        """
+        
+        # Die 3 Spielmodi
+        modes = [
+            (0, "Best of 3"),
+            (1, "Best of 5"),
+            (2, "Best of 7")
+        ]
+        
+        for mode_id, text in modes:
+            rb = QRadioButton(text)
+            rb.setStyleSheet(radio_style)
+            self.mode_group.addButton(rb, mode_id)
+            radio_layout.addWidget(rb)
+            
+            if mode_id == 1:  # Default: Best of 5
+                rb.setChecked(True)
+        
+        radio_layout.addStretch()
+        layout.addLayout(radio_layout)
+        
+        layout.addSpacing(20)
         
         # Buttons
         btn_layout = QHBoxLayout()
@@ -1209,7 +1254,9 @@ class NewTurnierDialog(QDialog):
         
     def on_accept(self):
         self.result_name = self.input_name.text()
-        idx = self.combo_sets.currentIndex()
+        idx = self.mode_group.checkedId()
+        if idx == -1:
+            idx = 1  # Fallback: Best of 5
         # 0->2 sets (BO3), 1->3 sets (BO5), 2->4 sets (BO7)
         self.result_sets = idx + 2
         self.accept()
