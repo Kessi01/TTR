@@ -1122,7 +1122,7 @@ class NewTurnierDialog(QDialog):
         self.result_name = ""
         self.accepted = False
         self.existing_tournaments = existing_tournaments or []
-        self.filtered_tournaments = []
+        self.filtered_tournaments = self.existing_tournaments.copy()  # Initialize with all tournaments
         self.setup_ui()
         
     def setup_ui(self):
