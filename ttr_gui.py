@@ -1116,15 +1116,14 @@ class TouchInputDialog(QWidget):
 
 
 
-# ==================== DATENBANKVERBINDUNG ====================
-    """Dialog zum Erstellen eines Turniers - Schritt 1: Name eingeben."""
+# ==================== TURNIER-NAME DIALOG (MIT TASTATUR) ====================
+class NewTurnierDialog(QDialog):
+    """Dialog zum Eingeben des Turniernamens - mit Touch-Tastatur wie bei Spielername."""
     
-    def __init__(self, parent=None, existing_tournaments=None):
+    def __init__(self, parent=None):
         super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.result_name = ""
         self.accepted = False
-        self.existing_tournaments = existing_tournaments or []
-        self.filtered_tournaments = self.existing_tournaments.copy()  # Initialize with all tournaments
         self.setup_ui()
         
     def setup_ui(self):
@@ -1153,9 +1152,7 @@ class TouchInputDialog(QWidget):
         
         layout.addSpacing(30)
         
-        # Input-Box mit Dropdown-Button (wie bei Spielername)
-        input_container = QHBoxLayout()
-        
+        # Input-Box (einfach, wie bei Spielername in Bild 3)
         self.input_name = QLineEdit()
         self.input_name.setPlaceholderText("Turniername eingeben...")
         self.input_name.setMinimumHeight(100)
@@ -1169,56 +1166,7 @@ class TouchInputDialog(QWidget):
                 font-size: 36px;
             }
         """)
-        self.input_name.textChanged.connect(self.filter_tournaments)
-        input_container.addWidget(self.input_name)
-        
-        # Dropdown-Button rechts
-        self.btn_dropdown = QPushButton("▼")
-        self.btn_dropdown.setMinimumSize(100, 100)
-        self.btn_dropdown.setStyleSheet("""
-            QPushButton {
-                background-color: #00d9ff;
-                color: #1a1a2e;
-                border: none;
-                border-radius: 15px;
-                font-size: 32px;
-                font-weight: bold;
-            }
-            QPushButton:pressed { background-color: #00b8d4; }
-        """)
-        self.btn_dropdown.clicked.connect(self.toggle_dropdown)
-        input_container.addWidget(self.btn_dropdown)
-        
-        layout.addLayout(input_container)
-        
-        # Dropdown-Liste für bestehende Turniere
-        self.dropdown_list = QListWidget()
-        self.dropdown_list.setVisible(False)
-        self.dropdown_list.setMinimumHeight(200)
-        self.dropdown_list.setMaximumHeight(300)
-        self.dropdown_list.setStyleSheet("""
-            QListWidget {
-                background-color: #16213e;
-                color: white;
-                border: 3px solid #00d9ff;
-                border-radius: 10px;
-                font-size: 24px;
-                padding: 10px;
-            }
-            QListWidget::item {
-                padding: 10px;
-                border-radius: 5px;
-            }
-            QListWidget::item:hover {
-                background-color: #1a1a2e;
-            }
-            QListWidget::item:selected {
-                background-color: #00d9ff;
-                color: #1a1a2e;
-            }
-        """)
-        self.dropdown_list.itemClicked.connect(self.select_tournament)
-        layout.addWidget(self.dropdown_list)
+        layout.addWidget(self.input_name)
         
         layout.addSpacing(30)
         
@@ -1364,30 +1312,6 @@ class TouchInputDialog(QWidget):
         layout.addLayout(keyboard_layout)
         
         layout.addStretch()
-        
-        # Populate dropdown with existing tournaments
-        self.update_dropdown_list()
-    
-    def filter_tournaments(self, text):
-        """Filter tournaments based on input text."""
-        text_lower = text.lower()
-        self.filtered_tournaments = [t for t in self.existing_tournaments if text_lower in t.lower()]
-        self.update_dropdown_list()
-    
-    def update_dropdown_list(self):
-        """Update the dropdown list with filtered tournaments."""
-        self.dropdown_list.clear()
-        for tournament in self.filtered_tournaments:
-            self.dropdown_list.addItem(tournament)
-    
-    def toggle_dropdown(self):
-        """Show/hide dropdown list."""
-        self.dropdown_list.setVisible(not self.dropdown_list.isVisible())
-    
-    def select_tournament(self, item):
-        """Select tournament from dropdown."""
-        self.input_name.setText(item.text())
-        self.dropdown_list.setVisible(False)
     
     def add_char(self, key):
         current = self.input_name.text()
@@ -1442,6 +1366,35 @@ class TouchInputDialog(QWidget):
         self.result_name = self.input_name.text()
         self.accepted = True
         self.close()
+    
+    @staticmethod
+    def get_turnier_info(parent):
+        """Zeigt beide Dialoge nacheinander: Name-Eingabe, dann Modus-Auswahl."""
+        # Schritt 1: Name eingeben
+        name_dialog = NewTurnierDialog(parent)
+        name_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        name_dialog.show()
+        
+        while name_dialog.isVisible():
+            QApplication.processEvents()
+        
+        if not name_dialog.accepted or not name_dialog.result_name.strip():
+            return "", 3, False
+        
+        tournament_name = name_dialog.result_name.strip()
+        
+        # Schritt 2: Spielmodus wählen
+        mode_dialog = TurnierModeDialog(parent, tournament_name)
+        mode_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        mode_dialog.show()
+        
+        while mode_dialog.isVisible():
+            QApplication.processEvents()
+        
+        if not mode_dialog.accepted:
+            return tournament_name, 3, False
+        
+        return tournament_name, mode_dialog.result_sets, True
 
 
 # ==================== SPIELMODUS-AUSWAHL DIALOG ====================
@@ -1581,54 +1534,9 @@ class TurnierModeDialog(QDialog):
         self.accepted = True
         self.close()
 
-        
 
-    @staticmethod
-    def get_turnier_info(parent, existing_tournaments=None):
-        """Zeigt beide Dialoge nacheinander und gibt (name, sets, ok) zurück."""
-        try:
-            print("DEBUG: get_turnier_info - creating name dialog")
-            # Schritt 1: Name eingeben
-            name_dialog = NewTurnierDialog(parent, existing_tournaments)
-            print("DEBUG: Name dialog created, setting modality")
-            name_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-            print("DEBUG: Showing name dialog")
-            name_dialog.show()
-            
-            print("DEBUG: Waiting for name dialog to close")
-            while name_dialog.isVisible():
-                QApplication.processEvents()
-            
-            print(f"DEBUG: Name dialog closed - accepted={name_dialog.accepted}, name={name_dialog.result_name}")
-            if not name_dialog.accepted or not name_dialog.result_name.strip():
-                return "", 3, False
-            
-            tournament_name = name_dialog.result_name.strip()
-            
-            print(f"DEBUG: Creating mode dialog for tournament '{tournament_name}'")
-            # Schritt 2: Spielmodus wählen
-            mode_dialog = TurnierModeDialog(parent, tournament_name)
-            print("DEBUG: Mode dialog created, setting modality")
-            mode_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-            print("DEBUG: Showing mode dialog")
-            mode_dialog.show()
-            
-            print("DEBUG: Waiting for mode dialog to close")
-            while mode_dialog.isVisible():
-                QApplication.processEvents()
-            
-            print(f"DEBUG: Mode dialog closed - accepted={mode_dialog.accepted}, sets={mode_dialog.result_sets}")
-            if not mode_dialog.accepted:
-                return tournament_name, 3, False
-            
-            print(f"DEBUG: Returning success - name={tournament_name}, sets={mode_dialog.result_sets}")
-            return tournament_name, mode_dialog.result_sets, True
-            
-        except Exception as e:
-            print(f"❌ ERROR in get_turnier_info: {e}")
-            import traceback
-            traceback.print_exc()
-            return "", 3, False
+
+# ==================== DATENBANKVERBINDUNG ====================
 
 
 # ==================== DATENBANKVERBINDUNG ====================
@@ -2307,33 +2215,16 @@ class TurnierListPage(QWidget):
             self.main_window.show_start_menu()
     
     def on_new_turnier(self):
-        """Erstellt ein neues Turnier mit einfachem Dialog."""
+        """Erstellt ein neues Turnier mit 2-Schritt-Dialog (Name + Modus)."""
         try:
-            # Einfacher Dialog für Turniername
-            name, ok = QInputDialog.getText(self, "Neues Turnier", "Turniername:")
-            if not ok or not name.strip():
-                return
+            # Verwende get_turnier_info für 2-Schritt-Prozess
+            name, sets_to_win, ok = NewTurnierDialog.get_turnier_info(self)
             
-            # Spielmodus auswählen mit Dialog
-            modes = ["Best of 3 (2 Sätze)", "Best of 5 (3 Sätze)", "Best of 7 (4 Sätze)"]
-            mode, ok = QInputDialog.getItem(self, "Spielmodus", "Wähle den Spielmodus:", modes, 1, False)
-            if not ok:
-                return
-            
-            # Konvertiere Auswahl zu sets_to_win
-            if "Best of 3" in mode:
-                sets_to_win = 2
-            elif "Best of 5" in mode:
-                sets_to_win = 3
-            elif "Best of 7" in mode:
-                sets_to_win = 4
-            else:
-                sets_to_win = 3  # Default
-            
-            # Turnier erstellen
-            if self.main_window and self.main_window.db:
-                self.main_window.db.create_turnier(name.strip(), sets_to_win)
-                self.load_turniere()
+            if ok and name.strip():
+                # Turnier erstellen
+                if self.main_window and self.main_window.db:
+                    self.main_window.db.create_turnier(name.strip(), sets_to_win)
+                    self.load_turniere()
                 
         except Exception as e:
             print(f"❌ ERROR in on_new_turnier: {e}")
