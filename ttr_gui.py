@@ -1769,6 +1769,10 @@ class DatabaseManager:
             print(f"❌ Fehler beim Laden der Turniere: {e}")
             return []
     
+    def get_all_turniere(self):
+        """Alias für get_turniere() für Kompatibilität."""
+        return self.get_turniere()
+    
     def create_turnier(self, name, sets_to_win=3):
         if not MYSQL_AVAILABLE or not self.connection:
             return 1
