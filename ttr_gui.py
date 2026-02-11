@@ -1114,7 +1114,9 @@ class TouchInputDialog(QWidget):
         return dialog.result_text, dialog.accepted
 
 
-class NewTurnierDialog(QDialog):
+
+
+# ==================== DATENBANKVERBINDUNG ====================
     """Dialog zum Erstellen eines Turniers - Schritt 1: Name eingeben."""
     
     def __init__(self, parent=None, existing_tournaments=None):
@@ -2305,27 +2307,34 @@ class TurnierListPage(QWidget):
             self.main_window.show_start_menu()
     
     def on_new_turnier(self):
+        """Erstellt ein neues Turnier mit einfachem Dialog."""
         try:
-            print("DEBUG: on_new_turnier called")
-            # Hole bestehende Turniernamen für den Filter
-            existing_tournaments = []
+            # Einfacher Dialog für Turniername
+            name, ok = QInputDialog.getText(self, "Neues Turnier", "Turniername:")
+            if not ok or not name.strip():
+                return
+            
+            # Spielmodus auswählen mit Dialog
+            modes = ["Best of 3 (2 Sätze)", "Best of 5 (3 Sätze)", "Best of 7 (4 Sätze)"]
+            mode, ok = QInputDialog.getItem(self, "Spielmodus", "Wähle den Spielmodus:", modes, 1, False)
+            if not ok:
+                return
+            
+            # Konvertiere Auswahl zu sets_to_win
+            if "Best of 3" in mode:
+                sets_to_win = 2
+            elif "Best of 5" in mode:
+                sets_to_win = 3
+            elif "Best of 7" in mode:
+                sets_to_win = 4
+            else:
+                sets_to_win = 3  # Default
+            
+            # Turnier erstellen
             if self.main_window and self.main_window.db:
-                print("DEBUG: Loading existing tournaments from DB")
-                turniere = self.main_window.db.get_all_turniere()
-                existing_tournaments = [turnier[1] for turnier in turniere]  # Index 1 = name
-                print(f"DEBUG: Found {len(existing_tournaments)} existing tournaments")
-            
-            print("DEBUG: Calling NewTurnierDialog.get_turnier_info")
-            # Verwende den neuen 2-Schritt-Dialog mit Tastatur und Mode-Auswahl
-            name, sets, ok = NewTurnierDialog.get_turnier_info(self, existing_tournaments)
-            print(f"DEBUG: Dialog returned - name={name}, sets={sets}, ok={ok}")
-            
-            if ok and name.strip():
-                print("DEBUG: Creating tournament in DB")
-                if self.main_window and self.main_window.db:
-                    self.main_window.db.create_turnier(name.strip(), sets)
-                    self.load_turniere()
-                print("DEBUG: Tournament created successfully")
+                self.main_window.db.create_turnier(name.strip(), sets_to_win)
+                self.load_turniere()
+                
         except Exception as e:
             print(f"❌ ERROR in on_new_turnier: {e}")
             import traceback
