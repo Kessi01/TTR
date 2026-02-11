@@ -1141,16 +1141,16 @@ class NewTurnierDialog(QDialog):
             self.showMaximized()
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(10)  # REDUZIERT von 20
+        layout.setContentsMargins(20, 10, 20, 10)  # REDUZIERT Top/Bottom
         
-        # Titel
+        # Titel (KLEINER)
         title = QLabel("Turniername")
-        title.setStyleSheet("font-size: 48px; color: #00d9ff; font-weight: bold;")
+        title.setStyleSheet("font-size: 40px; color: #00d9ff; font-weight: bold;")  # REDUZIERT von 48
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
-        layout.addSpacing(30)
+        layout.addSpacing(15)  # REDUZIERT von 30
         
         # Input-Box (einfach, wie bei Spielername in Bild 3)
         self.input_name = QLineEdit()
@@ -1168,11 +1168,11 @@ class NewTurnierDialog(QDialog):
         """)
         layout.addWidget(self.input_name)
         
-        layout.addSpacing(30)
+        layout.addSpacing(15)  # REDUZIERT von 30
         
-        # TASTATUR (exakt wie bei Spielername)
+        # TASTATUR (exakt wie bei Spielername - Bild 3)
         keyboard_layout = QVBoxLayout()
-        keyboard_layout.setSpacing(15)
+        keyboard_layout.setSpacing(10)  # REDUZIERT von 15
         
         rows = [
             ['Q', 'W', 'E', 'R', 'T', 'Z', 'U', 'I', 'O', 'P', 'Ü'],
