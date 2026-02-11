@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QStackedWidget, QLineEdit, QFrame, QMessageBox,
     QSizePolicy, QSpacerItem, QListWidget, QListWidgetItem, QTableWidget,
     QTableWidgetItem, QHeaderView, QInputDialog, QAbstractItemView,
-    QComboBox, QRadioButton, QButtonGroup, QCompleter, QDialog, QScroller
+    QComboBox, QRadioButton, QButtonGroup, QCompleter, QDialog
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, QRectF
 from PyQt6.QtGui import QFont, QColor, QPalette, QPixmap, QPainter, QBrush
@@ -2219,13 +2219,7 @@ class TurnierListPage(QWidget):
             QListWidget::item { padding: 15px; border-bottom: 1px solid #0f3460; color: #ffffff; }
             QListWidget::item:selected { background-color: #00d9ff; color: #1a1a2e; }
         """)
-        
-        # Touch-Scrolling aktivieren (Kinetic Scrolling)
-        self.turnier_list.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-        QScroller.grabGesture(self.turnier_list.viewport(), QScroller.ScrollerGesture.TouchGesture)
-        
-        # Single-Click statt Double-Click
-        self.turnier_list.itemClicked.connect(self.on_turnier_selected)
+        self.turnier_list.itemDoubleClicked.connect(self.on_turnier_selected)
         layout.addWidget(self.turnier_list)
         
         
