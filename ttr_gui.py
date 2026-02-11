@@ -2415,6 +2415,38 @@ class TurnierDetailPage(QWidget):
             self.main_window.show_turnier_list()
     
     def on_play_match(self):
+        if self.main_window and self.main_window.db:
+            # 1. Spieler laden
+            players = self.main_window.db.get_turnier_players(self.turnier_id)
+            
+            # 2. Wenn genau 2 Spieler -> Automatischer Start
+            if len(players) == 2:
+                player1_id, p1_first, p1_last = players[0]
+                player2_id, p2_first, p2_last = players[1]
+                
+                player1_name = f"{p1_first} {p1_last}".strip()
+                player2_name = f"{p2_first} {p2_last}".strip()
+                
+                # Sets to win ermitteln (aus Turnier-Liste laden, da hier nicht verfügbar)
+                sets_to_win = 3 # Fallback
+                try:
+                    all_turniere = self.main_window.db.get_turniere()
+                    for t in all_turniere:
+                        if t[0] == self.turnier_id and len(t) > 3:
+                            sets_to_win = t[3]
+                            break
+                except Exception as e:
+                    print(f"Fehler beim Laden der Turniereinstellungen: {e}")
+                
+                # Match direkt konfigurieren (analog zu MatchSetupPage.on_start)
+                self.main_window.current_turnier_id = self.turnier_id
+                self.main_window.current_turnier_name = self.turnier_name
+                self.main_window.page_scoreboard.turnier_id = self.turnier_id
+                self.main_window.page_scoreboard.reset_match(player1_id, player1_name, player2_id, player2_name, sets_to_win=sets_to_win)
+                self.main_window.stack.setCurrentIndex(4) # Scoreboard Page
+                return
+
+        # Fallback: Standard-Verhalten (Setup-Seite)
         if self.main_window:
             self.main_window.start_turnier_match(self.turnier_id, self.turnier_name)
 
