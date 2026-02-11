@@ -1734,6 +1734,26 @@ class DatabaseManager:
             print(f"❌ Fehler Rankliste: {e}")
             return []
 
+    def get_turnier_players(self, turnier_id):
+        """Gibt eine Liste aller Spieler zurück, die bereits Spiele in diesem Turnier hatten."""
+        if not MYSQL_AVAILABLE or not self.connection:
+            return []
+        try:
+            cursor = self.connection.cursor()
+            query = """
+                SELECT DISTINCT s.id, s.vorname, s.nachname 
+                FROM spieler s
+                JOIN matches m ON s.id = m.spieler1_id OR s.id = m.spieler2_id
+                WHERE m.turnier_id = %s
+                ORDER BY s.vorname, s.nachname
+            """
+            cursor.execute(query, (turnier_id,))
+            players = cursor.fetchall()
+            cursor.close()
+            return players
+        except Error as e:
+            print(f"❌ Fehler beim Laden der Turnierspieler: {e}")
+            return []
 
 # ==================== SEITE 1: STARTMENÜ ====================
 class StartMenuPage(QWidget):
@@ -1999,8 +2019,23 @@ class MatchSetupPage(QWidget):
     def refresh_autocomplete(self):
         """Lädt Spieler aus der DB und fügt sie zur Autovervollständigung hinzu."""
         if self.main_window and self.main_window.db:
+            player_names = []
+            
+            # 1. Turnier-Spieler priorisieren (wenn im Turniermodus)
+            if hasattr(self, 'locked_turnier_id') and self.locked_turnier_id:
+                t_players = self.main_window.db.get_turnier_players(self.locked_turnier_id)
+                for p in t_players:
+                    name = f"{p[1]} {p[2]}".strip()
+                    if name not in player_names:
+                        player_names.append(name)
+            
+            # 2. Alle anderen Spieler
             raw_players = self.main_window.db.get_spieler()
-            player_names = [f"{p[1]} {p[2]}" for p in raw_players]
+            for p in raw_players:
+                name = f"{p[1]} {p[2]}".strip()
+                if name not in player_names:
+                    player_names.append(name)
+            
             completer = QCompleter(player_names)
             completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
             completer.setFilterMode(Qt.MatchFlag.MatchContains)
@@ -2027,7 +2062,6 @@ class MatchSetupPage(QWidget):
         is_quick = (index == 0)
         is_turnier = (index == 4)
         
-        # Schnelles Spiel: Keine Namenseingabe
         # Schnelles Spiel: Keine Namenseingabe, dafür Info-Label
         self.player_input_container.setVisible(not is_quick)
         self.quick_label.setVisible(is_quick)
@@ -2036,6 +2070,26 @@ class MatchSetupPage(QWidget):
         self.turnier_container.setVisible(is_turnier)
         if is_turnier:
             self.load_turniere()
+            
+    def setup_for_turnier(self, turnier_id):
+        """Konfiguriert die Seite für ein festes Turnier."""
+        self.locked_turnier_id = turnier_id
+        
+        # Modus auf "Turnier" setzen (Index 4)
+        btn = self.mode_group.button(4)
+        if btn: btn.setChecked(True)
+        
+        self.on_mode_changed() # UI aktualisieren (lädt Turniere)
+        
+        # Das spezifische Turnier auswählen und sperren
+        for i in range(self.combo_turnier.count()):
+            data = self.combo_turnier.itemData(i) # (id, sets)
+            if data and data[0] == turnier_id:
+                self.combo_turnier.setCurrentIndex(i)
+                self.combo_turnier.setEnabled(False) # Sperren
+                break
+        
+        self.refresh_autocomplete()
     
     def load_turniere(self):
         self.combo_turnier.clear()
@@ -2069,6 +2123,8 @@ class MatchSetupPage(QWidget):
                         break
     
     def clear_inputs(self):
+        self.locked_turnier_id = None
+        self.combo_turnier.setEnabled(True) # Entsperren
         self.input_player1.clear()
         self.input_player2.clear()
         # Reset auf Default (Schnelles Spiel)
@@ -2178,8 +2234,26 @@ class TurnierListPage(QWidget):
         btn_new.clicked.connect(self.on_new_turnier)
         btn_layout.addWidget(btn_new)
         
+        btn_play = QPushButton("Match Starten")
+        btn_play.setMinimumHeight(70)
+        btn_play.clicked.connect(self.on_start_match_selected)
+        btn_layout.addWidget(btn_play)
+        
         layout.addLayout(btn_layout)
         self.setLayout(layout)
+    
+    def on_start_match_selected(self):
+        items = self.turnier_list.selectedItems()
+        if not items:
+            QMessageBox.warning(self, "Info", "Bitte wähle ein Turnier aus.")
+            return
+            
+        item = items[0]
+        turnier_id = item.data(Qt.ItemDataRole.UserRole)
+        turnier_name = item.text()
+        
+        if self.main_window:
+            self.main_window.start_turnier_match(turnier_id, turnier_name)
     
     def load_turniere(self):
         self.turnier_list.clear()
@@ -2204,8 +2278,12 @@ class TurnierListPage(QWidget):
             if ok and name.strip():
                 # Turnier erstellen
                 if self.main_window and self.main_window.db:
-                    self.main_window.db.create_turnier(name.strip(), sets_to_win)
+                    new_id = self.main_window.db.create_turnier(name.strip(), sets_to_win)
                     self.load_turniere()
+                    
+                    # Direkt zum Match-Setup springen
+                    if new_id:
+                        self.main_window.start_turnier_match(new_id, name.strip())
                 
         except Exception as e:
             print(f"❌ ERROR in on_new_turnier: {e}")
@@ -2801,6 +2879,7 @@ class TTRMainWindow(QMainWindow):
         self.current_turnier_id = turnier_id
         self.current_turnier_name = turnier_name
         self.page_setup.clear_inputs()
+        self.page_setup.setup_for_turnier(turnier_id)
         self.stack.setCurrentIndex(1)
     
     def closeEvent(self, event):
