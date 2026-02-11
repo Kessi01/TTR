@@ -2201,6 +2201,7 @@ class TurnierListPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.main_window = parent
+        self.last_selected_id = None
         self.setup_ui()
     
     def setup_ui(self):
@@ -2219,7 +2220,7 @@ class TurnierListPage(QWidget):
             QListWidget::item { padding: 15px; border-bottom: 1px solid #0f3460; color: #ffffff; }
             QListWidget::item:selected { background-color: #00d9ff; color: #1a1a2e; }
         """)
-        self.turnier_list.itemDoubleClicked.connect(self.on_turnier_selected)
+        self.turnier_list.itemClicked.connect(self.on_turnier_clicked)
         layout.addWidget(self.turnier_list)
         
         
@@ -2251,6 +2252,7 @@ class TurnierListPage(QWidget):
     
     def load_turniere(self):
         self.turnier_list.clear()
+        self.last_selected_id = None
         if self.main_window and self.main_window.db:
             turniere = self.main_window.db.get_turniere()
             for turnier in turniere:
@@ -2285,7 +2287,17 @@ class TurnierListPage(QWidget):
             traceback.print_exc()
             QMessageBox.critical(self, "Fehler", f"Fehler beim Erstellen des Turniers:\n{e}")
     
-    def on_turnier_selected(self, item):
+    def on_turnier_clicked(self, item):
+        turnier_id = item.data(Qt.ItemDataRole.UserRole)
+        
+        # Wenn bereits ausgewählt und nochmal geklickt -> Öffnen
+        if turnier_id == self.last_selected_id:
+            self.open_turnier_detail(item)
+        else:
+            # Erster Klick -> Nur Markieren (macht QListWidget automatisch)
+            self.last_selected_id = turnier_id
+
+    def open_turnier_detail(self, item):
         turnier_id = item.data(Qt.ItemDataRole.UserRole)
         turnier_name = item.text()
         if self.main_window:
