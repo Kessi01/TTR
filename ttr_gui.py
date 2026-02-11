@@ -1891,7 +1891,7 @@ class TurnierListPage(QWidget):
         if self.main_window and self.main_window.db:
             turniere = self.main_window.db.get_turniere()
             for turnier in turniere:
-                turnier_id, name, _ = turnier
+                turnier_id, name, erstellt_am, sets_to_win = turnier
                 item = QListWidgetItem(f"{name}")
                 item.setData(Qt.ItemDataRole.UserRole, turnier_id)
                 self.turnier_list.addItem(item)
