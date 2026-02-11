@@ -1127,7 +1127,7 @@ class NewTurnierDialog(QDialog):
         self.setup_ui()
         
     def setup_ui(self):
-        # VOLLBILD wie bei Spielername
+        # VOLLBILD
         self.setStyleSheet("""
             QDialog {
                 background-color: #1a1a2e;
@@ -1141,18 +1141,18 @@ class NewTurnierDialog(QDialog):
             self.showMaximized()
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)  # REDUZIERT von 20
-        layout.setContentsMargins(20, 10, 20, 10)  # REDUZIERT Top/Bottom
+        layout.setSpacing(15)
+        layout.setContentsMargins(30, 30, 30, 30)
         
-        # Titel (KLEINER)
+        # Titel
         title = QLabel("Turniername")
-        title.setStyleSheet("font-size: 40px; color: #00d9ff; font-weight: bold;")  # REDUZIERT von 48
+        title.setStyleSheet("font-size: 48px; color: #00d9ff; font-weight: bold;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
-        layout.addSpacing(15)  # REDUZIERT von 30
+        layout.addSpacing(20)
         
-        # Input-Box (einfach, wie bei Spielername in Bild 3)
+        # Input-Box
         self.input_name = QLineEdit()
         self.input_name.setPlaceholderText("Turniername eingeben...")
         self.input_name.setMinimumHeight(100)
@@ -1168,12 +1168,13 @@ class NewTurnierDialog(QDialog):
         """)
         layout.addWidget(self.input_name)
         
-        layout.addSpacing(15)  # REDUZIERT von 30
+        layout.addSpacing(20)
         
-        # TASTATUR (exakt wie bei Spielername - Bild 3)
+        # TASTATUR - EXAKT WIE TouchKeyboard (Bild 1)
         keyboard_layout = QVBoxLayout()
-        keyboard_layout.setSpacing(10)  # REDUZIERT von 15
+        keyboard_layout.setSpacing(10)
         
+        # Schweizer QWERTZ Layout (wie TouchKeyboard)
         rows = [
             ['Q', 'W', 'E', 'R', 'T', 'Z', 'U', 'I', 'O', 'P', 'Ü'],
             ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ö', 'Ä'],
@@ -1186,40 +1187,42 @@ class NewTurnierDialog(QDialog):
         
         for row in rows:
             row_layout = QHBoxLayout()
-            row_layout.setSpacing(12)
+            row_layout.setSpacing(8)
             
             for key in row:
                 btn = QPushButton()
-                btn.setMinimumSize(90, 90)
-                btn.setMaximumSize(90, 90)
+                btn.setMinimumHeight(80)  # GLEICH WIE TouchKeyboard
                 
                 if key == '⌫':
                     btn.setText("⌫")
+                    btn.setMinimumWidth(90)  # GLEICH WIE TouchKeyboard
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #3a3a4a;
                             color: white;
                             border: none;
-                            border-radius: 10px;
-                            font-size: 32px;
+                            border-radius: 8px;
+                            font-size: 28px;
                         }
                         QPushButton:pressed { background-color: #5a5a6a; }
                     """)
                     btn.clicked.connect(self.backspace)
                 elif key == '⇧':
                     btn.setText("⇧")
+                    btn.setMinimumWidth(75)  # GLEICH WIE TouchKeyboard
                     self.shift_btn = btn
                     self.update_shift_style()
                     btn.clicked.connect(self.toggle_shift)
                 else:
                     btn.setText(key.lower())
+                    btn.setMinimumWidth(65)  # GLEICH WIE TouchKeyboard
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #4a4a5a;
                             color: white;
                             border: none;
-                            border-radius: 10px;
-                            font-size: 32px;
+                            border-radius: 8px;
+                            font-size: 26px;
                             font-weight: bold;
                         }
                         QPushButton:pressed { background-color: #6a6a7a; }
@@ -1229,24 +1232,23 @@ class NewTurnierDialog(QDialog):
                 
                 row_layout.addWidget(btn)
             
-            row_layout.addStretch()
             keyboard_layout.addLayout(row_layout)
         
-        # Letzte Zeile: Zurück, Shift, SPACE, OK
+        # Letzte Zeile: ← Zurück, SPACE, OK (wie in Bild 1)
         last_row = QHBoxLayout()
-        last_row.setSpacing(12)
+        last_row.setSpacing(8)
         
         # ZURÜCK-Button
         btn_back = QPushButton("←")
-        btn_back.setMinimumSize(90, 90)
-        btn_back.setMaximumSize(90, 90)
+        btn_back.setMinimumHeight(80)
+        btn_back.setMinimumWidth(160)
         btn_back.setStyleSheet("""
             QPushButton {
                 background-color: #e94560;
                 color: white;
                 border: none;
-                border-radius: 10px;
-                font-size: 36px;
+                border-radius: 8px;
+                font-size: 32px;
                 font-weight: bold;
             }
             QPushButton:pressed { background-color: #c73648; }
@@ -1254,53 +1256,34 @@ class NewTurnierDialog(QDialog):
         btn_back.clicked.connect(self.reject)
         last_row.addWidget(btn_back)
         
-        # Shift-Taste
-        btn_shift_small = QPushButton("⬆")
-        btn_shift_small.setMinimumSize(90, 90)
-        btn_shift_small.setMaximumSize(90, 90)
-        btn_shift_small.setStyleSheet("""
-            QPushButton {
-                background-color: #3a3a4a;
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 24px;
-            }
-            QPushButton:pressed { background-color: #5a5a6a; }
-        """)
-        btn_shift_small.clicked.connect(self.toggle_shift)
-        last_row.addWidget(btn_shift_small)
-        
-        # SPACE-TASTE
+        # SPACE-TASTE (wie TouchKeyboard)
         btn_space = QPushButton("SPACE")
-        btn_space.setMinimumSize(600, 90)
-        btn_space.setMaximumHeight(90)
+        btn_space.setMinimumHeight(80)
+        btn_space.setMinimumWidth(450)  # GLEICH WIE TouchKeyboard
         btn_space.setStyleSheet("""
             QPushButton {
                 background-color: #3a3a4a;
                 color: white;
                 border: none;
-                border-radius: 10px;
-                font-size: 28px;
+                border-radius: 8px;
+                font-size: 24px;
             }
             QPushButton:pressed { background-color: #5a5a6a; }
         """)
         btn_space.clicked.connect(lambda: self.add_char(' '))
         last_row.addWidget(btn_space)
         
-        last_row.addStretch()
-        
-        # OK-BUTTON
+        # OK-BUTTON (groß, wie in Bild 1)
         btn_ok = QPushButton("OK")
-        btn_ok.setMinimumSize(200, 90)
-        btn_ok.setMaximumSize(200, 90)
+        btn_ok.setMinimumHeight(80)
+        btn_ok.setMinimumWidth(200)
         btn_ok.setStyleSheet("""
             QPushButton {
                 background-color: #00d9ff;
                 color: #1a1a2e;
                 border: none;
-                border-radius: 10px;
-                font-size: 32px;
+                border-radius: 8px;
+                font-size: 28px;
                 font-weight: bold;
             }
             QPushButton:pressed { background-color: #00b8d4; }
@@ -1339,8 +1322,8 @@ class NewTurnierDialog(QDialog):
                         background-color: #00d9ff;
                         color: #1a1a2e;
                         border: none;
-                        border-radius: 10px;
-                        font-size: 32px;
+                        border-radius: 8px;
+                        font-size: 28px;
                     }
                 """)
             else:
@@ -1349,8 +1332,8 @@ class NewTurnierDialog(QDialog):
                         background-color: #3a3a4a;
                         color: white;
                         border: none;
-                        border-radius: 10px;
-                        font-size: 32px;
+                        border-radius: 8px;
+                        font-size: 28px;
                     }
                     QPushButton:pressed { background-color: #5a5a6a; }
                 """)
