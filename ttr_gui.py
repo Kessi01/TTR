@@ -1584,31 +1584,49 @@ class TurnierModeDialog(QDialog):
     @staticmethod
     def get_turnier_info(parent, existing_tournaments=None):
         """Zeigt beide Dialoge nacheinander und gibt (name, sets, ok) zurück."""
-        # Schritt 1: Name eingeben
-        name_dialog = NewTurnierDialog(parent, existing_tournaments)
-        name_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-        name_dialog.show()
-        
-        while name_dialog.isVisible():
-            QApplication.processEvents()
-        
-        if not name_dialog.accepted or not name_dialog.result_name.strip():
+        try:
+            print("DEBUG: get_turnier_info - creating name dialog")
+            # Schritt 1: Name eingeben
+            name_dialog = NewTurnierDialog(parent, existing_tournaments)
+            print("DEBUG: Name dialog created, setting modality")
+            name_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+            print("DEBUG: Showing name dialog")
+            name_dialog.show()
+            
+            print("DEBUG: Waiting for name dialog to close")
+            while name_dialog.isVisible():
+                QApplication.processEvents()
+            
+            print(f"DEBUG: Name dialog closed - accepted={name_dialog.accepted}, name={name_dialog.result_name}")
+            if not name_dialog.accepted or not name_dialog.result_name.strip():
+                return "", 3, False
+            
+            tournament_name = name_dialog.result_name.strip()
+            
+            print(f"DEBUG: Creating mode dialog for tournament '{tournament_name}'")
+            # Schritt 2: Spielmodus wählen
+            mode_dialog = TurnierModeDialog(parent, tournament_name)
+            print("DEBUG: Mode dialog created, setting modality")
+            mode_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+            print("DEBUG: Showing mode dialog")
+            mode_dialog.show()
+            
+            print("DEBUG: Waiting for mode dialog to close")
+            while mode_dialog.isVisible():
+                QApplication.processEvents()
+            
+            print(f"DEBUG: Mode dialog closed - accepted={mode_dialog.accepted}, sets={mode_dialog.result_sets}")
+            if not mode_dialog.accepted:
+                return tournament_name, 3, False
+            
+            print(f"DEBUG: Returning success - name={tournament_name}, sets={mode_dialog.result_sets}")
+            return tournament_name, mode_dialog.result_sets, True
+            
+        except Exception as e:
+            print(f"❌ ERROR in get_turnier_info: {e}")
+            import traceback
+            traceback.print_exc()
             return "", 3, False
-        
-        tournament_name = name_dialog.result_name.strip()
-        
-        # Schritt 2: Spielmodus wählen
-        mode_dialog = TurnierModeDialog(parent, tournament_name)
-        mode_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-        mode_dialog.show()
-        
-        while mode_dialog.isVisible():
-            QApplication.processEvents()
-        
-        if not mode_dialog.accepted:
-            return tournament_name, 3, False
-        
-        return tournament_name, mode_dialog.result_sets, True
 
 
 # ==================== DATENBANKVERBINDUNG ====================
@@ -2283,18 +2301,32 @@ class TurnierListPage(QWidget):
             self.main_window.show_start_menu()
     
     def on_new_turnier(self):
-        # Hole bestehende Turniernamen für den Filter
-        existing_tournaments = []
-        if self.main_window and self.main_window.db:
-            turniere = self.main_window.db.get_all_turniere()
-            existing_tournaments = [turnier[1] for turnier in turniere]  # Index 1 = name
-        
-        # Verwende den neuen 2-Schritt-Dialog mit Tastatur und Mode-Auswahl
-        name, sets, ok = NewTurnierDialog.get_turnier_info(self, existing_tournaments)
-        if ok and name.strip():
+        try:
+            print("DEBUG: on_new_turnier called")
+            # Hole bestehende Turniernamen für den Filter
+            existing_tournaments = []
             if self.main_window and self.main_window.db:
-                self.main_window.db.create_turnier(name.strip(), sets)
-                self.load_turniere()
+                print("DEBUG: Loading existing tournaments from DB")
+                turniere = self.main_window.db.get_all_turniere()
+                existing_tournaments = [turnier[1] for turnier in turniere]  # Index 1 = name
+                print(f"DEBUG: Found {len(existing_tournaments)} existing tournaments")
+            
+            print("DEBUG: Calling NewTurnierDialog.get_turnier_info")
+            # Verwende den neuen 2-Schritt-Dialog mit Tastatur und Mode-Auswahl
+            name, sets, ok = NewTurnierDialog.get_turnier_info(self, existing_tournaments)
+            print(f"DEBUG: Dialog returned - name={name}, sets={sets}, ok={ok}")
+            
+            if ok and name.strip():
+                print("DEBUG: Creating tournament in DB")
+                if self.main_window and self.main_window.db:
+                    self.main_window.db.create_turnier(name.strip(), sets)
+                    self.load_turniere()
+                print("DEBUG: Tournament created successfully")
+        except Exception as e:
+            print(f"❌ ERROR in on_new_turnier: {e}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Fehler", f"Fehler beim Erstellen des Turniers:\n{e}")
     
     def on_turnier_selected(self, item):
         turnier_id = item.data(Qt.ItemDataRole.UserRole)
