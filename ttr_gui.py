@@ -1149,9 +1149,60 @@ class NewTurnierDialog(QDialog):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
+        layout.addSpacing(10)
+        
+        # OBEN LINKS: Radio Buttons für Best of 3/5/7
+        radio_container = QHBoxLayout()
+        
+        # Button Group für exklusive Auswahl
+        self.mode_group = QButtonGroup(self)
+        
+        # Radio Button Style wie in Bild 2
+        radio_style = """
+            QRadioButton { 
+                font-size: 28px; 
+                color: #ffffff; 
+                spacing: 12px;
+                padding: 15px;
+            }
+            QRadioButton::indicator { 
+                width: 36px; 
+                height: 36px; 
+            }
+            QRadioButton::indicator:checked { 
+                background-color: #00d9ff; 
+                border: 3px solid #00d9ff; 
+                border-radius: 18px; 
+            }
+            QRadioButton::indicator:unchecked { 
+                background-color: transparent; 
+                border: 3px solid #0f3460; 
+                border-radius: 18px; 
+            }
+        """
+        
+        # Die 3 Spielmodi
+        modes = [
+            (0, "Best of 3"),
+            (1, "Best of 5"),
+            (2, "Best of 7")
+        ]
+        
+        for mode_id, text in modes:
+            rb = QRadioButton(text)
+            rb.setStyleSheet(radio_style)
+            self.mode_group.addButton(rb, mode_id)
+            radio_container.addWidget(rb)
+            
+            if mode_id == 1:  # Default: Best of 5
+                rb.setChecked(True)
+        
+        radio_container.addStretch()
+        layout.addLayout(radio_container)
+        
         layout.addSpacing(20)
         
-        # Große Input-Box oben
+        # Große Input-Box 
         input_container = QHBoxLayout()
         self.input_name = QLineEdit()
         self.input_name.setPlaceholderText("Turniername eingeben...")
@@ -1168,7 +1219,7 @@ class NewTurnierDialog(QDialog):
         """)
         input_container.addWidget(self.input_name)
         
-        # Dropdown-Button rechts (wie in Bild 2)
+        # Dropdown-Button rechts (nur Dekoration)
         btn_dropdown = QPushButton("▼")
         btn_dropdown.setMinimumSize(100, 100)
         btn_dropdown.setStyleSheet("""
@@ -1182,14 +1233,14 @@ class NewTurnierDialog(QDialog):
             }
             QPushButton:pressed { background-color: #00b8d4; }
         """)
-        btn_dropdown.setEnabled(False)  # Nur Dekoration
+        btn_dropdown.setEnabled(False)
         input_container.addWidget(btn_dropdown)
         
         layout.addLayout(input_container)
         
         layout.addSpacing(30)
         
-        # GROSSE TASTATUR
+        # GROSSE TASTATUR (exakt wie bei Spielername)
         keyboard_layout = QVBoxLayout()
         keyboard_layout.setSpacing(15)
         
@@ -1210,7 +1261,7 @@ class NewTurnierDialog(QDialog):
             
             for key in row:
                 btn = QPushButton()
-                btn.setMinimumSize(90, 90)  # Große quadratische Tasten
+                btn.setMinimumSize(90, 90)
                 btn.setMaximumSize(90, 90)
                 
                 if key == '⌫':
@@ -1252,11 +1303,29 @@ class NewTurnierDialog(QDialog):
             row_layout.addStretch()
             keyboard_layout.addLayout(row_layout)
         
-        # Letzte Zeile: Shift, Space, Radio Buttons, OK
+        # Letzte Zeile: Zurück, Shift, SPACE, OK (wie bei Spielernamen)
         last_row = QHBoxLayout()
         last_row.setSpacing(12)
         
-        # Shift-Taste links (kleiner Pfeil)
+        # ZURÜCK-Button links
+        btn_back = QPushButton("←")
+        btn_back.setMinimumSize(90, 90)
+        btn_back.setMaximumSize(90, 90)
+        btn_back.setStyleSheet("""
+            QPushButton {
+                background-color: #e94560;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 36px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #c73648; }
+        """)
+        btn_back.clicked.connect(self.reject)
+        last_row.addWidget(btn_back)
+        
+        # Shift-Taste
         btn_shift_small = QPushButton("⬆")
         btn_shift_small.setMinimumSize(90, 90)
         btn_shift_small.setMaximumSize(90, 90)
@@ -1275,7 +1344,7 @@ class NewTurnierDialog(QDialog):
         
         # GROSSE SPACE-TASTE
         btn_space = QPushButton("SPACE")
-        btn_space.setMinimumSize(500, 90)
+        btn_space.setMinimumSize(600, 90)
         btn_space.setMaximumHeight(90)
         btn_space.setStyleSheet("""
             QPushButton {
@@ -1291,41 +1360,6 @@ class NewTurnierDialog(QDialog):
         last_row.addWidget(btn_space)
         
         last_row.addStretch()
-        
-        # Radio Buttons für Spielmodus
-        self.mode_group = QButtonGroup(self)
-        modes = [
-            (0, "BO3"),
-            (1, "BO5"),
-            (2, "BO7")
-        ]
-        
-        for mode_id, text in modes:
-            rb = QPushButton(text)  # Als Button statt Radio für besseres Aussehen
-            rb.setCheckable(True)
-            rb.setMinimumSize(80, 90)
-            rb.setMaximumSize(80, 90)
-            rb.setStyleSheet("""
-                QPushButton {
-                    background-color: #3a3a4a;
-                    color: white;
-                    border: 2px solid #0f3460;
-                    border-radius: 10px;
-                    font-size: 18px;
-                    font-weight: bold;
-                }
-                QPushButton:checked {
-                    background-color: #00d9ff;
-                    color: #1a1a2e;
-                    border: 2px solid #00d9ff;
-                }
-                QPushButton:pressed { background-color: #5a5a6a; }
-            """)
-            self.mode_group.addButton(rb, mode_id)
-            last_row.addWidget(rb)
-            
-            if mode_id == 1:  # Default: BO5
-                rb.setChecked(True)
         
         # GROSSER OK-BUTTON
         btn_ok = QPushButton("OK")
