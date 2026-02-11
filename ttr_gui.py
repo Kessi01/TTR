@@ -1115,6 +1115,469 @@ class TouchInputDialog(QWidget):
 
 
 class NewTurnierDialog(QDialog):
+    """Dialog zum Erstellen eines Turniers - Schritt 1: Name eingeben."""
+    
+    def __init__(self, parent=None, existing_tournaments=None):
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.result_name = ""
+        self.accepted = False
+        self.existing_tournaments = existing_tournaments or []
+        self.filtered_tournaments = []
+        self.setup_ui()
+        
+    def setup_ui(self):
+        # VOLLBILD wie bei Spielername
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1a1a2e;
+                border: none;
+            }
+            QLabel { color: white; }
+        """)
+        if self.parent():
+            self.setGeometry(self.parent().geometry())
+        else:
+            self.showMaximized()
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Titel
+        title = QLabel("Turniername")
+        title.setStyleSheet("font-size: 48px; color: #00d9ff; font-weight: bold;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+        
+        layout.addSpacing(30)
+        
+        # Input-Box mit Dropdown-Button (wie bei Spielername)
+        input_container = QHBoxLayout()
+        
+        self.input_name = QLineEdit()
+        self.input_name.setPlaceholderText("Turniername eingeben...")
+        self.input_name.setMinimumHeight(100)
+        self.input_name.setStyleSheet("""
+            QLineEdit {
+                background-color: #16213e;
+                color: white;
+                border: 3px solid #00d9ff;
+                border-radius: 15px;
+                padding: 20px;
+                font-size: 36px;
+            }
+        """)
+        self.input_name.textChanged.connect(self.filter_tournaments)
+        input_container.addWidget(self.input_name)
+        
+        # Dropdown-Button rechts
+        self.btn_dropdown = QPushButton("▼")
+        self.btn_dropdown.setMinimumSize(100, 100)
+        self.btn_dropdown.setStyleSheet("""
+            QPushButton {
+                background-color: #00d9ff;
+                color: #1a1a2e;
+                border: none;
+                border-radius: 15px;
+                font-size: 32px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #00b8d4; }
+        """)
+        self.btn_dropdown.clicked.connect(self.toggle_dropdown)
+        input_container.addWidget(self.btn_dropdown)
+        
+        layout.addLayout(input_container)
+        
+        # Dropdown-Liste für bestehende Turniere
+        self.dropdown_list = QListWidget()
+        self.dropdown_list.setVisible(False)
+        self.dropdown_list.setMinimumHeight(200)
+        self.dropdown_list.setMaximumHeight(300)
+        self.dropdown_list.setStyleSheet("""
+            QListWidget {
+                background-color: #16213e;
+                color: white;
+                border: 3px solid #00d9ff;
+                border-radius: 10px;
+                font-size: 24px;
+                padding: 10px;
+            }
+            QListWidget::item {
+                padding: 10px;
+                border-radius: 5px;
+            }
+            QListWidget::item:hover {
+                background-color: #1a1a2e;
+            }
+            QListWidget::item:selected {
+                background-color: #00d9ff;
+                color: #1a1a2e;
+            }
+        """)
+        self.dropdown_list.itemClicked.connect(self.select_tournament)
+        layout.addWidget(self.dropdown_list)
+        
+        layout.addSpacing(30)
+        
+        # TASTATUR (exakt wie bei Spielername)
+        keyboard_layout = QVBoxLayout()
+        keyboard_layout.setSpacing(15)
+        
+        rows = [
+            ['Q', 'W', 'E', 'R', 'T', 'Z', 'U', 'I', 'O', 'P', 'Ü'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ö', 'Ä'],
+            ['⇧', 'Y', 'X', 'C', 'V', 'B', 'N', 'M', '⌫']
+        ]
+        
+        self.shift_active = False
+        self.shift_btn = None
+        self.letter_buttons = []
+        
+        for row in rows:
+            row_layout = QHBoxLayout()
+            row_layout.setSpacing(12)
+            
+            for key in row:
+                btn = QPushButton()
+                btn.setMinimumSize(90, 90)
+                btn.setMaximumSize(90, 90)
+                
+                if key == '⌫':
+                    btn.setText("⌫")
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #3a3a4a;
+                            color: white;
+                            border: none;
+                            border-radius: 10px;
+                            font-size: 32px;
+                        }
+                        QPushButton:pressed { background-color: #5a5a6a; }
+                    """)
+                    btn.clicked.connect(self.backspace)
+                elif key == '⇧':
+                    btn.setText("⇧")
+                    self.shift_btn = btn
+                    self.update_shift_style()
+                    btn.clicked.connect(self.toggle_shift)
+                else:
+                    btn.setText(key.lower())
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #4a4a5a;
+                            color: white;
+                            border: none;
+                            border-radius: 10px;
+                            font-size: 32px;
+                            font-weight: bold;
+                        }
+                        QPushButton:pressed { background-color: #6a6a7a; }
+                    """)
+                    btn.clicked.connect(lambda checked, k=key: self.add_char(k))
+                    self.letter_buttons.append((btn, key))
+                
+                row_layout.addWidget(btn)
+            
+            row_layout.addStretch()
+            keyboard_layout.addLayout(row_layout)
+        
+        # Letzte Zeile: Zurück, Shift, SPACE, OK
+        last_row = QHBoxLayout()
+        last_row.setSpacing(12)
+        
+        # ZURÜCK-Button
+        btn_back = QPushButton("←")
+        btn_back.setMinimumSize(90, 90)
+        btn_back.setMaximumSize(90, 90)
+        btn_back.setStyleSheet("""
+            QPushButton {
+                background-color: #e94560;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 36px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #c73648; }
+        """)
+        btn_back.clicked.connect(self.reject)
+        last_row.addWidget(btn_back)
+        
+        # Shift-Taste
+        btn_shift_small = QPushButton("⬆")
+        btn_shift_small.setMinimumSize(90, 90)
+        btn_shift_small.setMaximumSize(90, 90)
+        btn_shift_small.setStyleSheet("""
+            QPushButton {
+                background-color: #3a3a4a;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 24px;
+            }
+            QPushButton:pressed { background-color: #5a5a6a; }
+        """)
+        btn_shift_small.clicked.connect(self.toggle_shift)
+        last_row.addWidget(btn_shift_small)
+        
+        # SPACE-TASTE
+        btn_space = QPushButton("SPACE")
+        btn_space.setMinimumSize(600, 90)
+        btn_space.setMaximumHeight(90)
+        btn_space.setStyleSheet("""
+            QPushButton {
+                background-color: #3a3a4a;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 28px;
+            }
+            QPushButton:pressed { background-color: #5a5a6a; }
+        """)
+        btn_space.clicked.connect(lambda: self.add_char(' '))
+        last_row.addWidget(btn_space)
+        
+        last_row.addStretch()
+        
+        # OK-BUTTON
+        btn_ok = QPushButton("OK")
+        btn_ok.setMinimumSize(200, 90)
+        btn_ok.setMaximumSize(200, 90)
+        btn_ok.setStyleSheet("""
+            QPushButton {
+                background-color: #00d9ff;
+                color: #1a1a2e;
+                border: none;
+                border-radius: 10px;
+                font-size: 32px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #00b8d4; }
+        """)
+        btn_ok.clicked.connect(self.on_accept)
+        last_row.addWidget(btn_ok)
+        
+        keyboard_layout.addLayout(last_row)
+        layout.addLayout(keyboard_layout)
+        
+        layout.addStretch()
+        
+        # Populate dropdown with existing tournaments
+        self.update_dropdown_list()
+    
+    def filter_tournaments(self, text):
+        """Filter tournaments based on input text."""
+        text_lower = text.lower()
+        self.filtered_tournaments = [t for t in self.existing_tournaments if text_lower in t.lower()]
+        self.update_dropdown_list()
+    
+    def update_dropdown_list(self):
+        """Update the dropdown list with filtered tournaments."""
+        self.dropdown_list.clear()
+        for tournament in self.filtered_tournaments:
+            self.dropdown_list.addItem(tournament)
+    
+    def toggle_dropdown(self):
+        """Show/hide dropdown list."""
+        self.dropdown_list.setVisible(not self.dropdown_list.isVisible())
+    
+    def select_tournament(self, item):
+        """Select tournament from dropdown."""
+        self.input_name.setText(item.text())
+        self.dropdown_list.setVisible(False)
+    
+    def add_char(self, key):
+        current = self.input_name.text()
+        char = key.lower() if not self.shift_active else key.upper()
+        self.input_name.setText(current + char)
+        if self.shift_active:
+            self.shift_active = False
+            self.update_shift_style()
+            self.update_letter_buttons()
+    
+    def backspace(self): 
+        current = self.input_name.text()
+        self.input_name.setText(current[:-1])
+    
+    def toggle_shift(self):
+        self.shift_active = not self.shift_active
+        self.update_shift_style()
+        self.update_letter_buttons()
+    
+    def update_shift_style(self):
+        if self.shift_btn:
+            if self.shift_active:
+                self.shift_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #00d9ff;
+                        color: #1a1a2e;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 32px;
+                    }
+                """)
+            else:
+                self.shift_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #3a3a4a;
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 32px;
+                    }
+                    QPushButton:pressed { background-color: #5a5a6a; }
+                """)
+    
+    def update_letter_buttons(self):
+        for btn, key in self.letter_buttons:
+            if self.shift_active:
+                btn.setText(key.upper())
+            else:
+                btn.setText(key.lower())
+        
+    def on_accept(self):
+        self.result_name = self.input_name.text()
+        self.accepted = True
+        self.close()
+
+
+# ==================== SPIELMODUS-AUSWAHL DIALOG ====================
+class TurnierModeDialog(QDialog):
+    """Dialog zum Auswählen des Spielmodus - Schritt 2."""
+    
+    def __init__(self, parent=None, tournament_name=""):
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.tournament_name = tournament_name
+        self.result_sets = 3  # Default: Best of 5
+        self.accepted = False
+        self.setup_ui()
+        
+    def setup_ui(self):
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1a1a2e;
+                border: none;
+            }
+            QLabel { color: white; }
+        """)
+        if self.parent():
+            self.setGeometry(self.parent().geometry())
+        else:
+            self.showMaximized()
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(40)
+        layout.setContentsMargins(50, 50, 50, 50)
+        
+        # Titel
+        title = QLabel(f"Turnier: {self.tournament_name}")
+        title.setStyleSheet("font-size: 48px; color: #00d9ff; font-weight: bold;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+        
+        subtitle = QLabel("Wähle den Spielmodus")
+        subtitle.setStyleSheet("font-size: 32px; color: #ffffff;")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(subtitle)
+        
+        layout.addSpacing(60)
+        
+        # Radio Buttons für Modi (GROSS)
+        self.mode_group = QButtonGroup(self)
+        
+        radio_style = """
+            QRadioButton { 
+                font-size: 48px; 
+                color: #ffffff; 
+                spacing: 20px;
+                padding: 30px;
+            }
+            QRadioButton::indicator { 
+                width: 60px; 
+                height: 60px; 
+            }
+            QRadioButton::indicator:checked { 
+                background-color: #00d9ff; 
+                border: 4px solid #00d9ff; 
+                border-radius: 30px; 
+            }
+            QRadioButton::indicator:unchecked { 
+                background-color: transparent; 
+                border: 4px solid #0f3460; 
+                border-radius: 30px; 
+            }
+        """
+        
+        modes_container = QVBoxLayout()
+        modes_container.setSpacing(40)
+        
+        modes = [
+            (0, "Best of 3"),
+            (1, "Best of 5"),
+            (2, "Best of 7")
+        ]
+        
+        for mode_id, text in modes:
+            rb = QRadioButton(text)
+            rb.setStyleSheet(radio_style)
+            self.mode_group.addButton(rb, mode_id)
+            modes_container.addWidget(rb, alignment=Qt.AlignmentFlag.AlignCenter)
+            
+            if mode_id == 1:  # Default: Best of 5
+                rb.setChecked(True)
+        
+        layout.addLayout(modes_container)
+        layout.addSpacing(60)
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(30)
+        
+        btn_back = QPushButton("Zurück")
+        btn_back.setMinimumHeight(100)
+        btn_back.setMinimumWidth(250)
+        btn_back.setStyleSheet("""
+            QPushButton {
+                background-color: #16213e;
+                color: white;
+                border: 3px solid #e94560;
+                border-radius: 15px;
+                font-size: 32px;
+            }
+            QPushButton:pressed { background-color: #e94560; }
+        """)
+        btn_back.clicked.connect(self.reject)
+        btn_layout.addWidget(btn_back)
+        
+        btn_ok = QPushButton("Erstellen")
+        btn_ok.setMinimumHeight(100)
+        btn_ok.setMinimumWidth(250)
+        btn_ok.setStyleSheet("""
+            QPushButton {
+                background-color: #00d9ff;
+                color: #1a1a2e;
+                border: none;
+                border-radius: 15px;
+                font-size: 32px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #00b8d4; }
+        """)
+        btn_ok.clicked.connect(self.on_accept)
+        btn_layout.addWidget(btn_ok)
+        
+        layout.addLayout(btn_layout)
+        layout.addStretch()
+    
+    def on_accept(self):
+        idx = self.mode_group.checkedId()
+        if idx == -1:
+            idx = 1  # Fallback: Best of 5
+        # 0->2 sets (BO3), 1->3 sets (BO5), 2->4 sets (BO7)
+        self.result_sets = idx + 2
+        self.accepted = True
+        self.close()
     """Dialog zum Erstellen eines Turniers mit Regelauswahl."""
     
     def __init__(self, parent=None):
@@ -1433,31 +1896,35 @@ class NewTurnierDialog(QDialog):
             else:
                 btn.setText(key.lower())
         
-    def on_accept(self):
-        self.result_name = self.input_name.text()
-        idx = self.mode_group.checkedId()
-        if idx == -1:
-            idx = 1  # Fallback: Best of 5
-        # 0->2 sets (BO3), 1->3 sets (BO5), 2->4 sets (BO7)
-        self.result_sets = idx + 2
-        self.accepted = True
-        self.close()
 
     @staticmethod
-    def get_turnier_info(parent):
-        dialog = NewTurnierDialog(parent)
-        dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
-        dialog.show()
+    def get_turnier_info(parent, existing_tournaments=None):
+        """Zeigt beide Dialoge nacheinander und gibt (name, sets, ok) zurück."""
+        # Schritt 1: Name eingeben
+        name_dialog = NewTurnierDialog(parent, existing_tournaments)
+        name_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        name_dialog.show()
         
-        # Warten auf Schließen
-        from PyQt6.QtCore import QEventLoop
-        loop = QEventLoop()
-        dialog.destroyed.connect(loop.quit)
-        
-        while dialog.isVisible():
+        while name_dialog.isVisible():
             QApplication.processEvents()
         
-        return dialog.result_name, dialog.result_sets, dialog.accepted
+        if not name_dialog.accepted or not name_dialog.result_name.strip():
+            return "", 3, False
+        
+        tournament_name = name_dialog.result_name.strip()
+        
+        # Schritt 2: Spielmodus wählen
+        mode_dialog = TurnierModeDialog(parent, tournament_name)
+        mode_dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        mode_dialog.show()
+        
+        while mode_dialog.isVisible():
+            QApplication.processEvents()
+        
+        if not mode_dialog.accepted:
+            return tournament_name, 3, False
+        
+        return tournament_name, mode_dialog.result_sets, True
 
 
 # ==================== DATENBANKVERBINDUNG ====================
@@ -2132,8 +2599,14 @@ class TurnierListPage(QWidget):
             self.main_window.show_start_menu()
     
     def on_new_turnier(self):
-        # Verwende den neuen Dialog mit Tastatur und Radio Buttons
-        name, sets, ok = NewTurnierDialog.get_turnier_info(self)
+        # Hole bestehende Turniernamen für den Filter
+        existing_tournaments = []
+        if self.main_window and self.main_window.db:
+            turniere = self.main_window.db.get_all_turniere()
+            existing_tournaments = [turnier[1] for turnier in turniere]  # Index 1 = name
+        
+        # Verwende den neuen 2-Schritt-Dialog mit Tastatur und Mode-Auswahl
+        name, sets, ok = NewTurnierDialog.get_turnier_info(self, existing_tournaments)
         if ok and name.strip():
             if self.main_window and self.main_window.db:
                 self.main_window.db.create_turnier(name.strip(), sets)
