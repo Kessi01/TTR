@@ -2222,9 +2222,21 @@ class TurnierListPage(QWidget):
         self.turnier_list.itemDoubleClicked.connect(self.on_turnier_selected)
         layout.addWidget(self.turnier_list)
         
+        
         btn_layout = QHBoxLayout()
         btn_back = QPushButton("← Zurück")
         btn_back.setMinimumHeight(70)
+        btn_back.setStyleSheet("""
+            QPushButton {
+                background-color: #e94560;
+                color: white;
+                border: none;
+                border-radius: 15px;
+                font-size: 22px;
+                font-weight: bold;
+            }
+            QPushButton:pressed { background-color: #c73648; }
+        """)
         btn_back.clicked.connect(self.on_back)
         btn_layout.addWidget(btn_back)
         
@@ -2234,26 +2246,8 @@ class TurnierListPage(QWidget):
         btn_new.clicked.connect(self.on_new_turnier)
         btn_layout.addWidget(btn_new)
         
-        btn_play = QPushButton("Match Starten")
-        btn_play.setMinimumHeight(70)
-        btn_play.clicked.connect(self.on_start_match_selected)
-        btn_layout.addWidget(btn_play)
-        
         layout.addLayout(btn_layout)
         self.setLayout(layout)
-    
-    def on_start_match_selected(self):
-        items = self.turnier_list.selectedItems()
-        if not items:
-            QMessageBox.warning(self, "Info", "Bitte wähle ein Turnier aus.")
-            return
-            
-        item = items[0]
-        turnier_id = item.data(Qt.ItemDataRole.UserRole)
-        turnier_name = item.text()
-        
-        if self.main_window:
-            self.main_window.start_turnier_match(turnier_id, turnier_name)
     
     def load_turniere(self):
         self.turnier_list.clear()
