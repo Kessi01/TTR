@@ -150,3 +150,5 @@ if __name__ == "__main__":
     print(f"Debug: {app_config.debug}")
     print(f"Kiosk Mode: {app_config.kiosk_mode}")
     print(f"Stylesheet: {app_config.stylesheet_path}")
+
+# asdfasdfasdfasdfasdfasdf
