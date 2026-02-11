@@ -1395,8 +1395,8 @@ class TurnierModeDialog(QDialog):
             self.showMaximized()
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(40)
-        layout.setContentsMargins(50, 50, 50, 50)
+        layout.setSpacing(20)  # Reduziert von 40
+        layout.setContentsMargins(30, 30, 30, 30)  # Reduziert von 50
         
         # Titel
         title = QLabel(f"Turnier: {self.tournament_name}")
@@ -1409,36 +1409,37 @@ class TurnierModeDialog(QDialog):
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle)
         
-        layout.addSpacing(60)
+        layout.addSpacing(30)  # Reduziert von 60
         
         # Radio Buttons für Modi (GROSS)
         self.mode_group = QButtonGroup(self)
         
+        # Kompakteres Styling für Radio Buttons
         radio_style = """
             QRadioButton { 
-                font-size: 48px; 
+                font-size: 42px; 
                 color: #ffffff; 
-                spacing: 20px;
-                padding: 30px;
+                spacing: 15px;
+                padding: 15px;
             }
             QRadioButton::indicator { 
-                width: 60px; 
-                height: 60px; 
+                width: 50px; 
+                height: 50px; 
             }
             QRadioButton::indicator:checked { 
                 background-color: #00d9ff; 
                 border: 4px solid #00d9ff; 
-                border-radius: 30px; 
+                border-radius: 25px; 
             }
             QRadioButton::indicator:unchecked { 
                 background-color: transparent; 
                 border: 4px solid #0f3460; 
-                border-radius: 30px; 
+                border-radius: 25px; 
             }
         """
         
         modes_container = QVBoxLayout()
-        modes_container.setSpacing(40)
+        modes_container.setSpacing(20)  # Reduziert von 40
         
         modes = [
             (0, "Best of 3"),
@@ -1456,29 +1457,36 @@ class TurnierModeDialog(QDialog):
                 rb.setChecked(True)
         
         layout.addLayout(modes_container)
-        layout.addSpacing(60)
         
-        # Buttons
+        # Spacer um Buttons ganz nach unten zu schieben
+        layout.addStretch()
+        
+        # Buttons (Unten Links: Zurück, Unten Rechts: OK)
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(30)
         
+        # Zurück-Button (ROT, wie Keyboard)
         btn_back = QPushButton("Zurück")
         btn_back.setMinimumHeight(100)
         btn_back.setMinimumWidth(250)
         btn_back.setStyleSheet("""
             QPushButton {
-                background-color: #16213e;
+                background-color: #e94560;
                 color: white;
-                border: 3px solid #e94560;
+                border: none;
                 border-radius: 15px;
                 font-size: 32px;
+                font-weight: bold;
             }
-            QPushButton:pressed { background-color: #e94560; }
+            QPushButton:pressed { background-color: #c73648; }
         """)
         btn_back.clicked.connect(self.reject)
         btn_layout.addWidget(btn_back)
         
-        btn_ok = QPushButton("Erstellen")
+        btn_layout.addStretch() # Abstand zwischen Buttons
+        
+        # OK-Button (BLAU)
+        btn_ok = QPushButton("OK")
         btn_ok.setMinimumHeight(100)
         btn_ok.setMinimumWidth(250)
         btn_ok.setStyleSheet("""
